@@ -65,13 +65,13 @@ class MyDialog:
 
     def yes(self):
 
-        print("Dictionary Updated")
+        print("Dictionary Updated") #TODO Remove
 
         self.top.destroy()
 
     def no(self):
 
-        print("Update Cancelled")
+        print("Update Cancelled") #TODO Remove
 
         self.top.destroy()
 
@@ -85,7 +85,8 @@ class DictEditor(Frame):
         self.link_field = None
         self.link_value = None
 
-        self.cursor = connection.cursor()
+        self.connection = connection
+        self.cursor = self.connection.cursor()
         self.table = table
         self.field = field
 
@@ -121,6 +122,8 @@ class DictEditor(Frame):
         self.columnconfigure(0, weight=1)
         self.columnconfigure(1, weight=5)
 
+        self.link_value = link_value
+
         if link_value and self.link_field:
             sql = self.sql_select + " WHERE " + self.link_field + "=?" + self.sql_sort
             self.cursor.execute(sql, (link_value,))
@@ -145,9 +148,10 @@ class DictEditor(Frame):
                 textvalue = userdict.get(key)
                 #if dictionary key is found
                 if textvalue:
-                    val_edit = Entry(self)
+                    val_edit = Entry(self, exportselection=0, relief=FLAT)
                     val_edit.insert(INSERT, textvalue)
                     val_edit.grid(column=1, row=self.framerow, sticky='w')
+                    val_edit["state"] = DISABLED
             elif type(value) == list:
                 listVar = StringVar(self)
                 listVar.set(userdict[key])
@@ -175,7 +179,7 @@ class DictEditor(Frame):
             elif type(item) == Entry:
                 edit_dict[c_key] = item.get()
 
-        print(edit_dict)
+        print(edit_dict) #TODO print new dict
 
         d = MyDialog(window, edit_dict)
         window.wait_window(d.top)
@@ -184,10 +188,10 @@ class DictEditor(Frame):
         return edit_dict
 
     def update_database(self, dict):
-        print(self.link_field)
-        self.sql_update = "UPDATE " + self.table + " SET " + self.field + " = " + str(dict) + " WHERE " + self.link_field + "=TimHamilton"
-        print(self.sql_update)
-        #self.cursor.execute(self.sql_update)
+        self.sql_update = "UPDATE " + self.table + " SET " + self.field + "=?" + " WHERE " + self.link_field + "=?"
+        self.cursor.execute(self.sql_update, (str(dict), self.link_value,))
+        self.connection.commit()
+
 
 class DataListBox(ScrollBox):
 
@@ -307,7 +311,7 @@ submitButton.grid(column=1, row=2, sticky="ew", padx=(30, 0))
 clearButton = Button(window, text="Clear", command=dataFrame.clear)
 clearButton.grid(column=1, row=3, sticky="ew", padx=(30, 0))
 
-exitButton = Button(window, text="Exit", command=exit)
+exitButton = Button(window, text="Exit", command=window.quit)
 exitButton.grid(column=1, row=4, sticky="ew", padx=(30, 0))
 
 
